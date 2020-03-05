@@ -3,8 +3,8 @@ package br.com.rodrigorahman.springbootcommysql.controller;
 import br.com.rodrigorahman.springbootcommysql.controller.dto.PessoaRq;
 import br.com.rodrigorahman.springbootcommysql.controller.dto.PessoaRs;
 import br.com.rodrigorahman.springbootcommysql.model.Pessoa;
+import br.com.rodrigorahman.springbootcommysql.repository.PessoaCustomRepository;
 import br.com.rodrigorahman.springbootcommysql.repository.PessoaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,9 +15,11 @@ import java.util.stream.Collectors;
 public class PessoaController {
 
     private final PessoaRepository pessoaRepository;
+    private final PessoaCustomRepository pessoaCustomRepository;
 
-    public PessoaController(PessoaRepository pessoaRepository) {
+    public PessoaController(PessoaRepository pessoaRepository, PessoaCustomRepository pessoaCustomRepository) {
         this.pessoaRepository = pessoaRepository;
+        this.pessoaCustomRepository = pessoaCustomRepository;
     }
 
     @GetMapping("/")
@@ -47,7 +49,7 @@ public class PessoaController {
     public void updatePerson(@PathVariable("id") Long id, @RequestBody PessoaRq pessoa) throws Exception {
         var p = pessoaRepository.findById(id);
 
-        if(p.isPresent()) {
+        if (p.isPresent()) {
             var pessoaSave = p.get();
             pessoaSave.setNome(pessoa.getNome());
             pessoaSave.setSobrenome(pessoa.getSobrenome());
@@ -55,6 +57,26 @@ public class PessoaController {
         } else {
             throw new Exception("Pessoa Não encontrada");
         }
-
     }
+
+    @GetMapping("/filter")
+    public List<PessoaRs> findPersonByName(@RequestParam("name") String name) {
+        return this.pessoaRepository.findByNomeContains(name)
+                .stream()
+                .map(PessoaRs::converter)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/filter/custom")
+    public List<PessoaRs> findPersonByCustom(
+            @RequestParam(value = "id", required = false) Long id,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "sobrenome", required = false) String sobrenome
+    ) {
+        return this.pessoaCustomRepository.find(id, name, sobrenome)
+                .stream()
+                .map(PessoaRs::converter)
+                .collect(Collectors.toList());
+    }
+
 }
